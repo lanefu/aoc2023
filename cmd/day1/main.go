@@ -11,7 +11,7 @@ import (
 //go:embed input1.txt
 var inputBytes []byte
 
-//go:embed test1.txt
+//go:embed test2.txt
 var testBytes []byte
 
 func main() {
@@ -21,13 +21,13 @@ func main() {
 	fmt.Printf("Test file has %d lines\n", testNumLines)
 	fmt.Printf("Input file has %d lines\n", inputNumLines)
 
-	processLines(string(testBytes))
+	//	processLines(string(testBytes))
 
 	calibrationTestFinalValue := calibrate(string(testBytes))
 	fmt.Printf("Calibration value for test: %d\n", calibrationTestFinalValue)
 
-	calibrationFinalValue := calibrate(string(inputBytes))
-	fmt.Printf("Calibration value: %d\n", calibrationFinalValue)
+	// calibrationFinalValue := calibrate(string(inputBytes))
+	// fmt.Printf("Calibration value: %d\n", calibrationFinalValue)
 }
 
 func calibrate(calibrationData string) int {
@@ -43,13 +43,70 @@ func calibrate(calibrationData string) int {
 			break
 		}
 		// unsafe assumes at least one digit... which is true for this exercise
-		calibrationDigits := getCalibrationDigitsFromString(line)
+		calibrationDigits := getCalibrationDigitsFromString(digitPlunger(line))
 		calibrationValue += calibrationDigits
-		// fmt.Printf("calibration digit: %d calibratin Value: %d\n", calibrationDigits, calibrationValue)
+		fmt.Printf("source: %s calibration digit: %d calibration Value: %d\n", line, calibrationDigits, calibrationValue)
 	}
 
 	return calibrationValue
 
+}
+
+func digitPlunger(plungeString string) string {
+
+	var digits [10]string
+	digits[0] = "zero"
+	digits[1] = "one"
+	digits[2] = "two"
+	digits[3] = "three"
+	digits[4] = "four"
+	digits[5] = "five"
+	digits[6] = "six"
+	digits[7] = "seven"
+	digits[8] = "eight"
+	digits[9] = "nine"
+
+	var cursor, cursorTrimStart, cursorTrimEnd int
+	var digitLength int
+	var trimmedString string
+
+	oldString := plungeString
+	cursor = 0
+
+	fmt.Printf("\n%s:\n", oldString)
+
+	// has to be at least 1 characters left to match a string
+	for cursor <= (len(plungeString)) {
+
+		for i := 0; i < 10; i++ {
+			digit := digits[i]
+			digitLength = len(digit)
+			// block probably notnneeded now
+			if cursor > 0 {
+				cursorTrimStart = cursor
+				cursorTrimEnd = cursorTrimStart + digitLength
+			} else {
+				cursorTrimEnd = digitLength
+			}
+			// bail if word length wont fit in substring
+			if cursorTrimEnd <= len(plungeString) {
+
+				if cursor == 0 {
+					trimmedString = plungeString[:digitLength]
+				} else {
+					trimmedString = plungeString[cursorTrimStart:cursorTrimEnd]
+				}
+				fmt.Printf(" Trying %s in %s[%d]\n", digit, trimmedString, digitLength)
+				if strings.Contains(trimmedString, digit) {
+					plungeString = strings.Replace(plungeString, digit, strconv.Itoa(i), 1)
+					fmt.Printf("  Matched %s, new value %s\n", digit, plungeString)
+				}
+			}
+		}
+		cursor++
+	}
+	fmt.Printf("   COMPLETE: before: %s after: %s\n", oldString, plungeString)
+	return plungeString
 }
 
 func countLines(content []byte) int {
