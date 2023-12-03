@@ -26,8 +26,8 @@ func main() {
 	calibrationTestFinalValue := calibrate(string(testBytes))
 	fmt.Printf("Calibration value for test: %d\n", calibrationTestFinalValue)
 
-	// calibrationFinalValue := calibrate(string(inputBytes))
-	// fmt.Printf("Calibration value: %d\n", calibrationFinalValue)
+	calibrationFinalValue := calibrate(string(inputBytes))
+	fmt.Printf("Calibration value: %d\n", calibrationFinalValue)
 }
 
 func calibrate(calibrationData string) int {
@@ -43,7 +43,7 @@ func calibrate(calibrationData string) int {
 			break
 		}
 		// unsafe assumes at least one digit... which is true for this exercise
-		calibrationDigits := getCalibrationDigitsFromString(digitPlunger(line))
+		calibrationDigits := getCalibrationDigitsFromString(line)
 		calibrationValue += calibrationDigits
 		fmt.Printf("source: %s calibration digit: %d calibration Value: %d\n", line, calibrationDigits, calibrationValue)
 	}
@@ -69,44 +69,53 @@ func digitPlunger(plungeString string) string {
 	var cursor, cursorTrimStart, cursorTrimEnd int
 	var digitLength int
 	var trimmedString string
-
+	var runeDigit rune
 	oldString := plungeString
 	cursor = 0
 
-	fmt.Printf("\n%s:\n", oldString)
+	var digitSlice []rune
+
+	fmt.Printf("\n%s[%d]:\n", oldString, len(plungeString))
 
 	// has to be at least 1 characters left to match a string
-	for cursor <= (len(plungeString)) {
+	for cursor < (len(plungeString)) {
+		runeDigit = rune(plungeString[cursor])
+		fmt.Printf(" Evaluate %c\n", runeDigit)
+		if unicode.IsDigit(runeDigit) {
+			digitSlice = append(digitSlice, runeDigit)
+		} else {
 
-		for i := 0; i < 10; i++ {
-			digit := digits[i]
-			digitLength = len(digit)
-			// block probably notnneeded now
-			if cursor > 0 {
-				cursorTrimStart = cursor
-				cursorTrimEnd = cursorTrimStart + digitLength
-			} else {
-				cursorTrimEnd = digitLength
-			}
-			// bail if word length wont fit in substring
-			if cursorTrimEnd <= len(plungeString) {
-
-				if cursor == 0 {
-					trimmedString = plungeString[:digitLength]
+			for i := 0; i < 10; i++ {
+				digit := digits[i]
+				digitLength = len(digit)
+				// block probably notnneeded now
+				if cursor > 0 {
+					cursorTrimStart = cursor
+					cursorTrimEnd = cursorTrimStart + digitLength
 				} else {
-					trimmedString = plungeString[cursorTrimStart:cursorTrimEnd]
+					cursorTrimEnd = digitLength
 				}
-				fmt.Printf(" Trying %s in %s[%d]\n", digit, trimmedString, digitLength)
-				if strings.Contains(trimmedString, digit) {
-					plungeString = strings.Replace(plungeString, digit, strconv.Itoa(i), 1)
-					fmt.Printf("  Matched %s, new value %s\n", digit, plungeString)
+				// bail if word length wont fit in substring
+				if cursorTrimEnd <= len(plungeString) {
+
+					if cursor == 0 {
+						trimmedString = plungeString[:digitLength]
+					} else {
+						trimmedString = plungeString[cursorTrimStart:cursorTrimEnd]
+					}
+					fmt.Printf(" Trying %s in %s[%d]\n", digit, trimmedString, digitLength)
+					if strings.Contains(trimmedString, digit) {
+						c := strconv.Itoa(i)
+						digitSlice = append(digitSlice, rune(c[0]))
+						fmt.Printf("  Matched %s returning %c\n", digit, rune(c[0]))
+					}
 				}
 			}
 		}
 		cursor++
 	}
-	fmt.Printf("   COMPLETE: before: %s after: %s\n", oldString, plungeString)
-	return plungeString
+	fmt.Printf("   COMPLETE: before: %s after: %s\n", oldString, string(digitSlice))
+	return string(digitSlice)
 }
 
 func countLines(content []byte) int {
@@ -151,18 +160,10 @@ func getDigitsFromString(inputString string) int {
 }
 
 func getCalibrationDigitsFromString(inputString string) int {
-	runeSlice := []rune(inputString)
-	var digitSlice []rune
 	var calibrationDigits []rune
 
-	for _, r := range runeSlice {
-		if unicode.IsDigit(r) {
-			digitSlice = append(digitSlice, r)
-		}
-	}
-
 	// Convert the rune slice to a string
-	digitString := string(digitSlice)
+	digitString := string(digitPlunger(inputString))
 	calibrationDigits = append(calibrationDigits, rune(digitString[0]))
 	calibrationDigits = append(calibrationDigits, rune(digitString[len(digitString)-1]))
 
